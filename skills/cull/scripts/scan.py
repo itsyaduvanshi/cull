@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Cull scanner.
 
-Walks a photo folder and writes <folder>/.cull/manifest.json:
-file size, dimensions, SHA-256 (exact duplicates), burst groups,
-transparency, and, when Pillow is installed, a blur score and a
-perceptual hash (near duplicates). Also makes small thumbnails that
-the dashboard shows and that Claude reads (far fewer tokens than the
-full photo).
+Walks a folder of photos and videos and writes
+<folder>/.cull/manifest.json: file size, dimensions, a content hash
+(exact duplicates), burst groups, transparency and, when Pillow is
+installed, a blur score and a perceptual hash (near duplicates).
 
-Never changes or deletes the user's photos. Python 3.8+, standard
-library only; Pillow (pip install pillow) and macOS `sips` are used
-when present.
+For videos (needs ffmpeg/ffprobe): duration, resolution, orientation,
+frame rate, audio, a thumbnail and a contact sheet of 6 frames that
+Claude reads to understand the clip.
+
+Thumbnails are small, so Claude spends far fewer tokens per file.
+
+Never changes or deletes the user's files. Python 3.8+, standard
+library only; Pillow (pip install pillow), ffmpeg and macOS `sips` are
+used when present.
 
 Usage:
     python3 scan.py <photo-folder> [--thumb 512] [--no-thumbs]
@@ -42,6 +46,9 @@ IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif", ".bmp",
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
 SKIP_DIRS = {".cull", "Culled", ".git", "node_modules", "__MACOSX"}
 STATE_DIR = ".cull"
+FFMPEG = shutil.which("ffmpeg")
+FFPROBE = shutil.which("ffprobe")
+SHEET_FRAMES = 6
 
 
 def sha256(path):
@@ -50,6 +57,122 @@ def sha256(path):
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def quick_hash(path, size):
+    """Full SHA-256 for small files; for big videos, hash size + 3 slices."""
+    if size <= 32 << 20:
+        return sha256(path)
+    h = hashlib.sha256(str(size).encode())
+    with open(path, "rb") as f:
+        h.update(f.read(4 << 20))
+        f.seek(size // 2)
+        h.update(f.read(4 << 20))
+        f.seek(-(4 << 20), 2)
+        h.update(f.read())
+    return "q" + h.hexdigest()
+
+
+def probe_video(path):
+    info = {}
+    if not FFPROBE:
+        return info
+    try:
+        out = subprocess.run(
+            [FFPROBE, "-v", "error", "-print_format", "json", "-show_streams", "-show_format", path],
+            capture_output=True, text=True, timeout=60,
+        ).stdout
+        d = json.loads(out or "{}")
+    except Exception:
+        return info
+    streams = d.get("streams", [])
+    v = next((x for x in streams if x.get("codec_type") == "video"), None)
+    info["audio"] = any(x.get("codec_type") == "audio" for x in streams)
+    try:
+        info["duration"] = round(float(d.get("format", {}).get("duration") or (v or {}).get("duration") or 0), 2)
+    except ValueError:
+        info["duration"] = 0
+    if v:
+        w, h = int(v.get("width") or 0), int(v.get("height") or 0)
+        rot = 0
+        try:
+            rot = int((v.get("tags") or {}).get("rotate", 0))
+        except ValueError:
+            pass
+        for sd in v.get("side_data_list") or []:
+            if "rotation" in sd:
+                try:
+                    rot = int(float(sd["rotation"]))
+                except ValueError:
+                    pass
+        if abs(rot) % 180 == 90:
+            w, h = h, w
+        info["w"], info["h"] = w, h
+        try:
+            num, den = (v.get("avg_frame_rate") or v.get("r_frame_rate") or "0/1").split("/")
+            info["fps"] = round(float(num) / float(den), 2) if float(den) else None
+        except Exception:
+            info["fps"] = None
+        info["codec"] = v.get("codec_name")
+    return info
+
+
+def grab_frame(path, t, dst, box):
+    r = subprocess.run(
+        [FFMPEG, "-v", "error", "-y", "-ss", "%.3f" % t, "-i", path, "-frames:v", "1",
+         "-vf", "scale=%d:%d:force_original_aspect_ratio=decrease" % (box, box), "-q:v", "4", dst],
+        capture_output=True, timeout=120,
+    )
+    return r.returncode == 0 and os.path.exists(dst)
+
+
+def video_frames(path, it, state):
+    """Thumbnail + contact sheet (3x2 frames, left to right, top to bottom)."""
+    if not FFMPEG:
+        return
+    dur = it.get("duration") or 0
+    times = [round(dur * (k + 0.5) / SHEET_FRAMES, 2) for k in range(SHEET_FRAMES)] if dur > 0 else [0]
+    thumb = os.path.join(state, "thumbs", it["id"] + ".jpg")
+    if grab_frame(path, times[len(times) // 2] if dur > 0 else 0, thumb, 512):
+        it["thumb"] = "thumbs/" + it["id"] + ".jpg"
+    sheets = os.path.join(state, "sheets")
+    os.makedirs(sheets, exist_ok=True)
+    sheet = os.path.join(sheets, it["id"] + ".jpg")
+    if len(times) == 1:
+        if it.get("thumb"):
+            shutil.copy(thumb, sheet)
+            it["sheet"], it["frame_times"] = "sheets/" + it["id"] + ".jpg", times
+        return
+    if HAVE_PIL:
+        tmp = []
+        for k, t in enumerate(times):
+            f = os.path.join(sheets, "%s_%d.jpg" % (it["id"], k))
+            if grab_frame(path, t, f, 360):
+                tmp.append(f)
+        if tmp:
+            frames = [Image.open(f).convert("RGB") for f in tmp]
+            fw = max(f.width for f in frames)
+            fh = max(f.height for f in frames)
+            cols = 3
+            rows = (len(frames) + cols - 1) // cols
+            canvas = Image.new("RGB", (fw * cols + 4 * (cols - 1), fh * rows + 4 * (rows - 1)), (20, 18, 16))
+            for k, fr in enumerate(frames):
+                canvas.paste(fr, ((k % cols) * (fw + 4), (k // cols) * (fh + 4)))
+            canvas.save(sheet, quality=80)
+            for fr in frames:
+                fr.close()
+            for f in tmp:
+                os.remove(f)
+    else:
+        r = subprocess.run(
+            [FFMPEG, "-v", "error", "-y", "-i", path, "-vf",
+             "fps=%f,scale=360:360:force_original_aspect_ratio=decrease,tile=3x2" % (SHEET_FRAMES / dur),
+             "-frames:v", "1", "-q:v", "4", sheet],
+            capture_output=True, timeout=600,
+        )
+    if os.path.exists(sheet):
+        it["sheet"] = "sheets/" + it["id"] + ".jpg"
+        it["frame_times"] = times
 
 
 def png_info(path):
@@ -223,8 +346,17 @@ def main():
                 "id": file_id(rel), "rel": rel, "name": name, "ext": ext, "kind": kind,
                 "size": st.st_size, "mtime": int(st.st_mtime),
                 "w": None, "h": None, "alpha": False,
-                "sha256": sha256(path), "thumb": None,
+                "sha256": quick_hash(path, st.st_size), "thumb": None,
             }
+            if kind == "video":
+                it.update(probe_video(path))
+                video_frames(path, it, state)
+                if HAVE_PIL and it.get("thumb"):
+                    try:
+                        with Image.open(os.path.join(state, it["thumb"])) as im:
+                            it["blur"], it["brightness"], it["dhash"] = pil_metrics(im)
+                    except Exception:
+                        pass
             if kind == "image":
                 dims = None
                 if ext == ".png":
@@ -285,7 +417,7 @@ def main():
             continue
         group = [a]
         for b in hashed[i + 1:]:
-            if b["id"] not in seen and hamming(a["dhash"], b["dhash"]) <= args.near:
+            if b["id"] not in seen and b["kind"] == a["kind"] and hamming(a["dhash"], b["dhash"]) <= args.near:
                 group.append(b)
         if len(group) > 1:
             group.sort(key=lambda x: -(x.get("blur") or 0))
@@ -336,15 +468,17 @@ def main():
                         labelled.add(json.loads(line)["id"])
                     except Exception:
                         pass
-    todo = [i for i in items if i["kind"] == "image" and not i.get("dup_of") and i["id"] not in labelled]
+    todo = [i for i in items if not i.get("dup_of") and i["id"] not in labelled]
 
     s = manifest["stats"]
     print("Scanned %s in %.1fs" % (root, time.time() - t0))
     print("  %d files (%d images, %d videos), %.1f MB" % (s["files"], s["images"], s["videos"], s["bytes"] / 1e6))
     print("  %d exact duplicates (%.1f MB), %d near duplicates" % (dup_count, dup_bytes / 1e6, near_count))
-    print("  %d images still need labels" % len(todo))
+    print("  %d files still need labels" % len(todo))
     if not HAVE_PIL:
-        print("  tip: pip install pillow  (adds blur score and near-duplicate detection)")
+        print("  tip: pip3 install pillow  (adds blur score and near-duplicate detection)")
+    if s["videos"] and not FFMPEG:
+        print("  tip: install ffmpeg so Claude can see inside videos (brew install ffmpeg)")
     print("STATE=%s" % state)
 
 

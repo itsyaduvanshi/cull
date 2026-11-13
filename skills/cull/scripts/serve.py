@@ -93,6 +93,7 @@ class Library:
             row["quality"] = lab.get("quality")
             row["caption"] = lab.get("caption", "")
             row["note"] = lab.get("note", "")
+            row["hook_at"] = lab.get("hook_at")
             row.update(over.get(it["id"], {}))
             rows.append(row)
         return m, rows
@@ -145,13 +146,46 @@ def make_handler(lib):
             if not os.path.isfile(path):
                 return self._send(404, {"error": "not found"})
             ctype = ctype or mimetypes.guess_type(path)[0] or "application/octet-stream"
-            self.send_response(200)
+            size = os.path.getsize(path)
+            start, end = 0, size - 1
+            rng = self.headers.get("Range")
+            if rng and rng.startswith("bytes="):
+                # videos need byte ranges to play and seek
+                a, _, b = rng[6:].split(",")[0].partition("-")
+                try:
+                    if a:
+                        start = int(a)
+                        end = min(int(b), size - 1) if b else size - 1
+                    else:
+                        start = max(0, size - int(b))
+                except ValueError:
+                    start, end = 0, size - 1
+                if start > end or start >= size:
+                    self.send_response(416)
+                    self.send_header("Content-Range", "bytes */%d" % size)
+                    self.end_headers()
+                    return
+                self.send_response(206)
+                self.send_header("Content-Range", "bytes %d-%d/%d" % (start, end, size))
+            else:
+                self.send_response(200)
             self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(os.path.getsize(path)))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Content-Length", str(end - start + 1))
             self.send_header("Cache-Control", cache)
             self.end_headers()
-            with open(path, "rb") as f:
-                shutil.copyfileobj(f, self.wfile)
+            try:
+                with open(path, "rb") as f:
+                    f.seek(start)
+                    left = end - start + 1
+                    while left > 0:
+                        chunk = f.read(min(1 << 20, left))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        left -= len(chunk)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # browser stopped a video request; normal
 
         def do_GET(self):
             if not self._host_ok():
@@ -168,13 +202,18 @@ def make_handler(lib):
                     "items": rows,
                     "can_undo": os.path.exists(lib.path("apply-log.json")),
                 })
-            if p.startswith("/thumb/") or p.startswith("/file/"):
+            if p.startswith("/thumb/") or p.startswith("/file/") or p.startswith("/sheet/"):
                 kind, _, fid = p[1:].partition("/")
                 it = lib.by_id().get(fid)
                 if not it:
                     return self._send(404, {"error": "unknown id"})
-                if kind == "thumb" and it.get("thumb"):
-                    return self._file(os.path.join(lib.state, it["thumb"]))
+                if kind == "sheet":
+                    return self._file(os.path.join(lib.state, it["sheet"])) if it.get("sheet") else self._send(404, {"error": "no sheet"})
+                if kind == "thumb":
+                    if it.get("thumb"):
+                        return self._file(os.path.join(lib.state, it["thumb"]))
+                    if it["kind"] == "video":
+                        return self._send(404, {"error": "no thumbnail"})
                 if it["ext"] in (".heic", ".heif", ".tif", ".tiff") and it.get("thumb"):
                     return self._file(os.path.join(lib.state, it["thumb"]))
                 return self._file(os.path.join(lib.root, it["rel"]))
@@ -182,13 +221,17 @@ def make_handler(lib):
                 _, rows = lib.items()
                 buf = io.StringIO()
                 w = csv.writer(buf)
-                w.writerow(["file", "folder", "role", "quality", "starred", "tags", "caption", "width", "height", "duplicate"])
+                w.writerow(["file", "type", "folder", "role", "quality", "starred", "tags", "caption", "duration_s", "hook_at_s", "width", "height", "orientation", "audio", "duplicate"])
                 rows.sort(key=lambda r: (r.get("folder") or "~", -(r.get("quality") or 0)))
                 for r in rows:
+                    w_, h_ = r.get("w") or 0, r.get("h") or 0
+                    orient = "" if not (w_ and h_) else "vertical" if h_ > w_ * 1.2 else "horizontal" if w_ > h_ * 1.2 else "square"
                     w.writerow([
-                        r["rel"], r.get("folder") or "", r.get("role") or "", r.get("quality") or "",
+                        r["rel"], r["kind"], r.get("folder") or "", r.get("role") or "", r.get("quality") or "",
                         "yes" if r.get("starred") else "", ", ".join(r.get("tags") or []), r.get("caption") or "",
-                        r.get("w") or "", r.get("h") or "", "yes" if r.get("dup_of") else "",
+                        r.get("duration") or "", r.get("hook_at") if r.get("hook_at") is not None else "",
+                        w_ or "", h_ or "", orient, ("yes" if r.get("audio") else "no") if r["kind"] == "video" else "",
+                        "yes" if r.get("dup_of") else "",
                     ])
                 return self._send(200, buf.getvalue(), "text/csv; charset=utf-8",
                                   {"Content-Disposition": 'attachment; filename="shot-list.csv"'})

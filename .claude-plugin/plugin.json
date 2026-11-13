@@ -1,6 +1,6 @@
 {
   "name": "cull",
-  "version": "0.1.0",
-  "description": "Claude looks at every photo in a folder, sorts it for editing (folder, role, quality, tags, duplicates) and opens a local dashboard to review and move the files.",
+  "version": "0.2.0",
+  "description": "Claude looks at every photo and video in a folder (6 frames per clip), sorts it for editing reels (category, hook, A-roll, B-roll, quality, tags, duplicates) and opens a local dashboard where everything flies into its folder.",
   "keywords": ["photos", "sorting", "duplicates", "video editing", "dashboard"]
 }

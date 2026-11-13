@@ -5,7 +5,7 @@
     {
       "name": "cull",
       "source": "./",
-      "description": "Sort a photo folder for editing with Claude and review it in a local dashboard."
+      "description": "Sort photos and videos for editing reels with Claude, then review them in a local dashboard."
     }
   ]
 }

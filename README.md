@@ -1,41 +1,55 @@
 # Cull
 
-Point Claude Code at a messy photo folder. Claude looks at every photo and
-sorts it for editing, then a local dashboard opens where you review it, fix
-anything with the keyboard, and copy the files into sorted folders.
+**Sort a messy folder of photos and videos in one command.** Built for
+creators and agencies who make reels and can never find the right clip.
 
-For every photo Claude decides:
+Point Claude Code at a shoot dump or camera roll. Claude looks at every photo
+and at six frames from every video, decides what it is and how you would use
+it in an edit, then a local dashboard opens. Press **Sort** and watch every
+file fly into its folder.
+
+For every file Claude decides:
 
 | | |
 |---|---|
-| **Folder** | People, Places & Travel, Food, Events, Pets & Animals, Products, Logos & Brand, Screenshots, Documents, Other (edit the list in `cull.config.json`) |
-| **Edit role** | hero, b-roll, thumbnail, brand, keep, reject |
-| **Quality** | 1–5, as a shot to put in an edit |
-| **Tags + caption** | searchable words and one sentence about the frame |
+| **Folder** | People & Talking, Travel & Places, Food & Drink, Lifestyle, Product, Events, Nature & Aerial, Graphics & Logos, Screens & Docs, Other (edit the list in `cull.config.json`) |
+| **Edit role** | Hook, A-roll, B-roll, Thumbnail, Brand, Keep, Reject |
+| **Quality** | 1–5, as material to put in an edit |
+| **Tags + caption** | searchable words (drone, close-up, slow-mo, talking head…) and one sentence |
+| **Hook moment** | for videos: the second with the strongest moment to open a reel on |
 
 The scanner adds, without Claude:
 
-- **Exact duplicates** (same bytes) and the MB you would free
-- **Near duplicates** (looks the same; keeps the sharpest) and **bursts**
-- **Sharpness score**, size, date, transparent-background detection for logos
-- Small thumbnails, so Claude spends far fewer tokens per photo
+- **Video facts**: length, 9:16 vertical or horizontal, frame rate (slow-mo),
+  audio or not
+- **Exact duplicates** and the space you would free
+- **Similar takes** and **burst** photos
+- **Sharpness score**, transparent-background detection for logos
+- Small thumbnails and 6-frame contact sheets, so Claude spends far fewer
+  tokens per file
 
-Everything runs on your computer. Photos are never uploaded anywhere except
-to Claude through your own Claude Code session, and nothing is ever deleted.
+Everything runs on your computer. Files are only shown to Claude through your
+own Claude Code session, and nothing is ever deleted.
 
 ## Install
 
-You need [Claude Code](https://claude.com/claude-code) and Python 3.8+
-(already on macOS). Optional, recommended:
+You need [Claude Code](https://claude.com/claude-code), Python 3.8+ (already
+on macOS) and, for videos, ffmpeg:
+
+```bash
+brew install ffmpeg
+```
+
+Recommended:
 
 ```bash
 pip3 install pillow pillow-heif
 ```
 
-`pillow` adds sharpness scores and near-duplicate detection; `pillow-heif`
-reads iPhone HEIC photos on Windows and Linux (macOS handles HEIC with `sips`).
+`pillow` adds sharpness scores and similar-shot detection; `pillow-heif`
+reads iPhone HEIC photos on Windows and Linux.
 
-### Option A: as a plugin (works in any folder)
+### Option A: plugin (works in any folder)
 
 In Claude Code:
 
@@ -44,7 +58,7 @@ In Claude Code:
 /plugin install cull@cull
 ```
 
-Then run `/cull:cull ~/Pictures/Trip`.
+Then run `/cull:cull ~/Desktop/Shoot`.
 
 ### Option B: clone and run
 
@@ -54,81 +68,74 @@ cd cull
 claude
 ```
 
-Then type `/cull ~/Pictures/Trip`.
-
-Or just say: *"sort the photos in ~/Desktop/shoot"*.
+Then type `/cull ~/Desktop/Shoot`, or just say *"sort the footage in
+~/Desktop/Shoot"*.
 
 ## What happens
 
-1. **Scan.** `scan.py` reads the folder and writes `.cull/` inside it
-   (manifest + thumbnails). Re-running is quick; finished work is kept.
-2. **Label.** Claude looks at the photos in batches of 25 and writes its
-   labels. Big folders are split across parallel sub-agents. Over 300 photos,
-   Claude asks first, because each photo costs tokens.
-3. **Dashboard.** `serve.py` opens `http://127.0.0.1:8787`.
+1. **Scan.** `scan.py` reads the folder and writes `.cull/` inside it:
+   manifest, thumbnails, video contact sheets. Re-running is quick.
+2. **Label.** Claude looks at the files in batches of 20. Big folders are
+   split across parallel sub-agents. Over 300 files, Claude asks first,
+   because each file costs tokens.
+3. **Dashboard.** `serve.py` opens `http://127.0.0.1:8787`. Press **Sort**.
 
 ## Dashboard
 
+- **Sort** files every clip and photo into its folder card, with sound if
+  you turn it on. Replay it any time.
+- **Folders**: click one to browse it.
+- **Browse**: filter by role, photos or videos, vertical or horizontal,
+  starred, similar takes, duplicates. Hover a video to preview it.
+- **Preview**: videos open at their hook moment. "What Claude saw" shows the
+  six frames; click one to jump there.
+- **Save to folders** copies (default) or moves the files into
+  `<your folder>/Culled/<Folder>/`. Duplicates go to `_Duplicates`, so you
+  can check them and delete them yourself. A move can be undone once.
+- **Shot list (CSV)**: file, type, folder, role, quality, tags, caption,
+  length, hook second, orientation, audio.
+
 | Key | Does |
 |---|---|
-| ← → ↑ ↓ | move between photos (Shift to select a range) |
-| Space / Enter | large preview with caption, tags, details |
-| 1 – 9, 0 | put selected photos in folder 1–10 |
-| h b t l k x | role: hero, b-roll, thumbnail, brand (logo), keep, reject |
+| ← → ↑ ↓ | move between files (Shift to select a range) |
+| Space | big preview |
+| 1 – 9, 0 | move to folder 1–10 |
+| h r b t l k x | Hook, A-roll, B-roll, Thumbnail, Brand, Keep, Reject |
 | s | star |
-| a | select all shown |
-| / | search tags, captions, file names |
+| Shift + A | select everything shown |
+| / | search |
 | ? | all shortcuts |
 
-Views: all photos, starred, not labelled yet, similar & bursts, exact
-duplicates, videos. Filter by folder, role and minimum quality; sort by
-folder, best first, newest, name or size.
-
-**Sort into folders** copies (default) or moves the files into
-`<your folder>/Culled/<Folder>/`. Duplicates go to `_Duplicates`, so
-you can check them and delete them yourself. A move can be undone once.
-
-**Export CSV** downloads a shot list: file, folder, role, quality, star,
-tags, caption, size. Paste it into your edit notes or a spreadsheet.
-
-Your changes in the dashboard are saved to `.cull/overrides.json` and win
-over Claude's labels, even after a re-scan.
+Your changes are saved to `.cull/overrides.json` and win over Claude's
+labels, even after a re-scan.
 
 ## Customise
 
-`skills/cull/cull.config.json`:
-
-```json
-{
-  "folders": ["People", "Places & Travel", "Food", "..."],
-  "port": 8787
-}
-```
-
-Keep folders to 10 or fewer so each has a number key.
+`skills/cull/cull.config.json` holds the folder list (keep it to 10 so each
+has a number key), the role descriptions Claude follows, and the port.
 
 ## Run the parts yourself
 
 ```bash
-python3 skills/cull/scripts/scan.py ~/Pictures/Trip
-python3 skills/cull/scripts/batches.py ~/Pictures/Trip
-python3 skills/cull/scripts/serve.py ~/Pictures/Trip --open
+python3 skills/cull/scripts/scan.py ~/Desktop/Shoot
+python3 skills/cull/scripts/batches.py ~/Desktop/Shoot
+python3 skills/cull/scripts/serve.py ~/Desktop/Shoot --open
 ```
 
-The dashboard works without labels too: you get duplicates, bursts,
-sharpness and manual sorting with the keyboard.
+The dashboard works without labels too: duplicates, similar takes, video
+facts and manual sorting with the keyboard.
 
 ## Files
 
 ```
 skills/cull/
   SKILL.md              what Claude does when you run /cull
-  cull.config.json   folders and port
-  scripts/scan.py       scan, thumbnails, duplicates (standard library)
-  scripts/batches.py    split photos into batches for Claude
+  cull.config.json      folders, roles, port
+  scripts/scan.py       scan, thumbnails, video frames, duplicates
+  scripts/batches.py    split files into batches for Claude
   scripts/serve.py      local dashboard server, 127.0.0.1 only
   dashboard/index.html  the dashboard (one file, no build step)
-.claude/skills/cull  link so /cull works after a clone
+.claude/skills/cull     link so /cull works after a clone
 .claude-plugin/         plugin and marketplace manifests
 ```
 
@@ -136,7 +143,7 @@ skills/cull/
 
 - The server listens on `127.0.0.1` only and rejects requests from other
   websites.
-- It only serves files that the scan found, never an arbitrary path.
+- It only serves files the scan found, never an arbitrary path.
 - Nothing is deleted. Moves are logged in `.cull/apply-log.json` for undo.
 - Delete the `.cull` folder to remove all Cull data from a library.
 

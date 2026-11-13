@@ -1,23 +1,24 @@
 {
   "folders": [
-    "People",
-    "Places & Travel",
-    "Food",
+    "People & Talking",
+    "Travel & Places",
+    "Food & Drink",
+    "Lifestyle",
+    "Product",
     "Events",
-    "Pets & Animals",
-    "Products",
-    "Logos & Brand",
-    "Screenshots",
-    "Documents",
+    "Nature & Aerial",
+    "Graphics & Logos",
+    "Screens & Docs",
     "Other"
   ],
   "roles": {
-    "hero": "Strong main shot: lead image, A-roll still, hero frame",
-    "b-roll": "Supporting shot to cut away to",
-    "thumbnail": "Would make a good video thumbnail or cover",
-    "brand": "Logo, brand asset, graphic to overlay",
-    "keep": "Fine to keep, no clear edit use",
-    "reject": "Blurry, dark, accidental, or not usable"
+    "hook": "Grabs attention in the first second: strong motion, reveal, face, surprise. Opens a reel.",
+    "a-roll": "Main footage that carries the story: talking to camera, the key action.",
+    "b-roll": "Supporting cutaway: details, scenery, hands, process, establishing shots.",
+    "thumbnail": "Would make a good cover or thumbnail: clear face or bold simple frame.",
+    "brand": "Logo, wordmark, product packshot or graphic to overlay.",
+    "keep": "Fine, no clear edit use.",
+    "reject": "Blurry, shaky, badly exposed, accidental, or a worse take of another clip."
   },
   "port": 8787
 }
