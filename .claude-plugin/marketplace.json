@@ -1,9 +1,9 @@
 {
-  "name": "shoebox",
-  "owner": { "name": "Shoebox contributors" },
+  "name": "cull",
+  "owner": { "name": "Cull contributors" },
   "plugins": [
     {
-      "name": "shoebox",
+      "name": "cull",
       "source": "./",
       "description": "Sort a photo folder for editing with Claude and review it in a local dashboard."
     }

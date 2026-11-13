@@ -1,10 +1,10 @@
 ---
-name: shoebox
-description: Sort a folder of photos for editing. Claude looks at every photo, files it into a folder (People, Places, Food, Logos & Brand, Screenshots...), gives it an edit role (hero, b-roll, thumbnail, brand, keep, reject), a 1-5 quality score, tags and a caption, finds exact and near duplicates, then opens a local dashboard to review, re-sort with the keyboard, export a CSV shot list and copy or move the files into sorted folders. Use when the user says "/shoebox <folder>", "sort my photos", "organise this folder", "photos sort karo", "find duplicates", "pick thumbnails", "best shots for my edit".
+name: cull
+description: Sort a folder of photos for editing. Claude looks at every photo, files it into a folder (People, Places, Food, Logos & Brand, Screenshots...), gives it an edit role (hero, b-roll, thumbnail, brand, keep, reject), a 1-5 quality score, tags and a caption, finds exact and near duplicates, then opens a local dashboard to review, re-sort with the keyboard, export a CSV shot list and copy or move the files into sorted folders. Use when the user says "/cull <folder>", "sort my photos", "organise this folder", "photos sort karo", "find duplicates", "pick thumbnails", "best shots for my edit".
 argument-hint: <photo-folder> [--limit N]
 ---
 
-# Shoebox: sort photos for editing
+# Cull: sort photos for editing
 
 Everything runs on the user's machine. The scripts and dashboard live in this
 skill's base directory (shown above when this skill loads). Call it `$SKILL`
@@ -25,7 +25,7 @@ sort. Expand `~`. If it does not exist, say so and stop.
 python3 "$SKILL/scripts/scan.py" "<folder>"
 ```
 
-This writes `<folder>/.shoebox/` (manifest, thumbnails). It is fast and safe
+This writes `<folder>/.cull/` (manifest, thumbnails). It is fast and safe
 to re-run: unchanged files and finished labels are kept. Tell the user the
 counts it prints. If it prints the Pillow tip, mention once that
 `pip3 install pillow` adds sharpness scores and near-duplicate detection.
@@ -55,7 +55,7 @@ Each `BATCH=` line is a file. Each line in it is
   next 8.
 
 For each batch, Read every image path in it, then write
-`<folder>/.shoebox/labels/<batch-name>.jsonl` (for `batch-003.txt`, write
+`<folder>/.cull/labels/<batch-name>.jsonl` (for `batch-003.txt`, write
 `batch-003.jsonl`) with exactly one JSON object per line:
 
 ```json
@@ -65,7 +65,7 @@ For each batch, Read every image path in it, then write
 Rules:
 
 - `id`: copy it exactly from the batch line.
-- `folder`: exactly one of the names in `$SKILL/shoebox.config.json` →
+- `folder`: exactly one of the names in `$SKILL/cull.config.json` →
   `folders`. Read that file first; the user may have changed the list. Use
   `Other` only when nothing fits.
 - `role`, one of:
@@ -117,7 +117,7 @@ Tell the user, briefly:
 - 3-5 best candidates for a thumbnail (file names)
 - how to use the dashboard: arrows to browse, `1`-`0` to change folder,
   `h b t l k x` to change role, `s` to star, Space to preview, "Sort into
-  folders" to copy or move files into `<folder>/Shoebox Sorted/`, "Export
+  folders" to copy or move files into `<folder>/Culled/`, "Export
   CSV" for a shot list.
 
 The user can stop the server with Ctrl+C, or ask you to stop it.

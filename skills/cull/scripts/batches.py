@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split the photos that still need labels into batches for Claude.
 
-Writes <folder>/.shoebox/batches/batch-NNN.txt. Each line is:
+Writes <folder>/.cull/batches/batch-NNN.txt. Each line is:
     <id>\t<path Claude should Read>\t<original relative path>
 The path is the thumbnail when one exists (cheaper to look at).
 
@@ -14,7 +14,7 @@ import os
 import shutil
 import sys
 
-STATE_DIR = ".shoebox"
+STATE_DIR = ".cull"
 
 
 def labelled_ids(state):

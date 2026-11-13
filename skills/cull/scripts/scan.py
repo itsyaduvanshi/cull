@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Shoebox scanner.
+"""Cull scanner.
 
-Walks a photo folder and writes <folder>/.shoebox/manifest.json:
+Walks a photo folder and writes <folder>/.cull/manifest.json:
 file size, dimensions, SHA-256 (exact duplicates), burst groups,
 transparency, and, when Pillow is installed, a blur score and a
 perceptual hash (near duplicates). Also makes small thumbnails that
@@ -40,8 +40,8 @@ except Exception:
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif", ".bmp", ".tif", ".tiff"}
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
-SKIP_DIRS = {".shoebox", "Shoebox Sorted", ".git", "node_modules", "__MACOSX"}
-STATE_DIR = ".shoebox"
+SKIP_DIRS = {".cull", "Culled", ".git", "node_modules", "__MACOSX"}
+STATE_DIR = ".cull"
 
 
 def sha256(path):

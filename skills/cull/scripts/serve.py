@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Shoebox dashboard server (local only, standard library).
+"""Cull dashboard server (local only, standard library).
 
 Serves the dashboard for one scanned photo folder at
 http://127.0.0.1:8787 and lets it:
   - read every photo with Claude's labels and your own edits
-  - save your edits (folder, role, tags, star) to .shoebox/overrides.json
-  - copy or move photos into "<folder>/Shoebox Sorted/<Folder>/"
+  - save your edits (folder, role, tags, star) to .cull/overrides.json
+  - copy or move photos into "<folder>/Culled/<Folder>/"
   - undo the last move
   - export a CSV shot list
 
-It never deletes a file. Duplicates go to "Shoebox Sorted/_Duplicates".
+It never deletes a file. Duplicates go to "Culled/_Duplicates".
 
 Usage:
     python3 serve.py <photo-folder> [--port 8787] [--open]
@@ -31,9 +31,9 @@ from urllib.parse import urlparse
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 DASHBOARD = os.path.join(REPO, "dashboard", "index.html")
-CONFIG = os.path.join(REPO, "shoebox.config.json")
-STATE_DIR = ".shoebox"
-OUT_DIR = "Shoebox Sorted"
+CONFIG = os.path.join(REPO, "cull.config.json")
+STATE_DIR = ".cull"
+OUT_DIR = "Culled"
 LOCK = threading.Lock()
 
 
@@ -118,7 +118,7 @@ def unique_dest(dest):
 
 def make_handler(lib):
     class H(BaseHTTPRequestHandler):
-        server_version = "Shoebox/1"
+        server_version = "Cull/1"
 
         def log_message(self, fmt, *a):
             pass
@@ -197,7 +197,7 @@ def make_handler(lib):
         def do_POST(self):
             # The custom header blocks cross-site form posts: a browser sends
             # it only after a CORS preflight, which this server never allows.
-            if not self._host_ok() or self.headers.get("X-Shoebox") != "1":
+            if not self._host_ok() or self.headers.get("X-Cull") != "1":
                 return self._send(403, {"error": "forbidden"})
             p = urlparse(self.path).path
             try:
@@ -310,7 +310,7 @@ def main():
     if not srv:
         sys.exit("No free port near %d" % port)
     url = "http://127.0.0.1:%d" % port
-    print("Shoebox dashboard: %s  (Ctrl+C to stop)" % url, flush=True)
+    print("Cull dashboard: %s  (Ctrl+C to stop)" % url, flush=True)
     if args.open:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
