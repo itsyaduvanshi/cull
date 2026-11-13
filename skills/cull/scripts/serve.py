@@ -5,7 +5,7 @@ Serves the dashboard for one scanned photo folder at
 http://127.0.0.1:8787 and lets it:
   - read every photo with Claude's labels and your own edits
   - save your edits (folder, role, tags, star) to .cull/overrides.json
-  - copy or move photos into "<folder>/Culled/<Folder>/"
+  - copy or move files into "<folder>/Culled/Photos|Videos/<Folder>/"
   - undo the last move
   - export a CSV shot list
 
@@ -81,12 +81,13 @@ class Library:
     def items(self):
         m = self.manifest()
         labels, over = self.labels(), self.overrides()
-        folders = self.config["folders"]
+        lists = {"image": self.config["photo_folders"], "video": self.config["video_folders"]}
         rows = []
         for it in m["items"]:
             row = dict(it)
             lab = labels.get(it["id"], {})
             row["labelled"] = bool(lab)
+            folders = lists[it["kind"]]
             row["folder"] = lab.get("folder") if lab.get("folder") in folders else (lab and "Other") or None
             row["role"] = lab.get("role")
             row["tags"] = lab.get("tags", [])
@@ -198,7 +199,8 @@ def make_handler(lib):
                 return self._send(200, {
                     "root": lib.root, "name": os.path.basename(lib.root),
                     "stats": m["stats"], "pillow": m.get("pillow"),
-                    "folders": lib.config["folders"], "roles": lib.config["roles"],
+                    "photo_folders": lib.config["photo_folders"], "video_folders": lib.config["video_folders"],
+                    "photo_roles": lib.config["photo_roles"], "video_roles": lib.config["video_roles"],
                     "items": rows,
                     "can_undo": os.path.exists(lib.path("apply-log.json")),
                 })
@@ -293,7 +295,7 @@ def make_handler(lib):
                 src = os.path.join(lib.root, r["rel"])
                 if not os.path.isfile(src):
                     continue
-                dest_dir = os.path.join(out, safe_name(folder))
+                dest_dir = os.path.join(out, "Videos" if r["kind"] == "video" else "Photos", safe_name(folder))
                 os.makedirs(dest_dir, exist_ok=True)
                 dest = unique_dest(os.path.join(dest_dir, os.path.basename(r["rel"])))
                 if mode == "move":
@@ -301,7 +303,8 @@ def make_handler(lib):
                 else:
                     shutil.copy2(src, dest)
                 log.append({"from": src, "to": dest})
-                counts[folder] = counts.get(folder, 0) + 1
+                key = ("Videos / " if r["kind"] == "video" else "Photos / ") + folder
+                counts[key] = counts.get(key, 0) + 1
             if mode == "move" and log:
                 with open(lib.path("apply-log.json"), "w") as f:
                     json.dump({"at": int(time.time()), "moves": log}, f, indent=1)

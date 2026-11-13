@@ -1,6 +1,6 @@
 ---
 name: cull
-description: Sort a messy folder of photos and videos (camera roll, shoot dump, reel footage) for editing. Claude looks at every photo and at 6 frames of every video, files each into a category (People & Talking, Travel & Places, Food & Drink, Lifestyle, Product, Events, Nature & Aerial, Graphics & Logos, Screens & Docs), gives it an edit role (hook, A-roll, B-roll, thumbnail, brand, keep, reject), a 1-5 quality score, tags, a caption and for videos the best moment to open on, finds duplicates and similar takes, then opens a local dashboard where the files fly into their folders and you can review, re-sort with the keyboard, export a shot list and copy or move the files. Use when the user says "/cull <folder>", "sort my footage", "sort my photos", "organise this folder", "which clips are b-roll", "reel ke liye footage sort karo", "photos sort karo", "find duplicates", "pick thumbnails".
+description: Sort a messy folder of photos and videos (camera roll, shoot dump, reel footage) for editing. Claude looks at every photo and at 6 frames of every video, files each into a category (photos: People, Places & Travel, Food, Events, Product, Logos & Brand, Screenshots...; videos: Talking Head, Travel, Food, Lifestyle, Product, Events, Nature & Aerial, Motion & Graphics, Screen Recordings...), gives it an edit role (photos: hero, thumbnail, brand; videos: hook, A-roll, B-roll; both: keep, reject), a 1-5 quality score, tags, a caption and for videos the best moment to open on, finds duplicates and similar takes, then opens a local dashboard where the files fly into their folders and you can review, re-sort with the keyboard, export a shot list and copy or move the files. Use when the user says "/cull <folder>", "sort my footage", "sort my photos", "organise this folder", "which clips are b-roll", "reel ke liye footage sort karo", "photos sort karo", "find duplicates", "pick thumbnails".
 argument-hint: <folder> [--limit N]
 ---
 
@@ -77,26 +77,26 @@ no frames, judge from the file name, set `quality` to null and say so in
 Rules:
 
 - `id`: copy it exactly from the batch line.
-- `folder`: exactly one name from `$SKILL/cull.config.json` → `folders`.
-  Read that file first; the user may have changed the list. What is in the
-  frame decides it. Someone speaking to camera, interviews, portraits: the
-  people folder. Drone, landscapes, sky, sea: nature. Screen recordings,
-  screenshots, documents, receipts: screens. Use `Other` only when nothing
+- `folder`: exactly one name from `$SKILL/cull.config.json`:
+  `photo_folders` for photos, `video_folders` for videos. Read that file
+  first; the user may have changed the lists. What is in the frame decides
+  it. Videos of someone speaking to camera or interviews: `Talking Head`.
+  Animated UI, kinetic type, explainer graphics: `Motion & Graphics`. Screen
+  captures: `Screen Recordings` (videos) or `Screenshots` (photos). Drone,
+  landscapes, sky, sea: the nature folder. Use `Other` only when nothing
   fits.
-- `role`, one of:
-  - `hook`: would stop the scroll in the first second of a reel. Strong
-    motion, a reveal, a striking face or moment, something surprising.
-  - `a-roll`: main footage that carries the story: talking to camera, the key
-    action, the moment the video is about.
-  - `b-roll`: usable supporting or cutaway shot: details, hands, process,
-    scenery, walking shots, establishing shots, textures.
-  - `thumbnail`: (mostly photos) a clear face with emotion or a bold simple
-    frame that reads at small size.
-  - `brand`: a logo, wordmark, product packshot, or graphic to overlay.
-  - `keep`: fine, but no clear edit use (most screenshots and documents).
-  - `reject`: blurry, shaky, badly exposed, accidental (pocket, floor, finger
-    over lens), very short by mistake, or clearly a worse take of a nearby
-    clip.
+- `role`: exactly one key from `photo_roles` (photos) or `video_roles`
+  (videos) in the config, following the description given there:
+  - photos: `hero` (strong main shot), `thumbnail` (clear face or bold frame
+    that reads small), `brand` (logo, packshot, overlay graphic), `keep`,
+    `reject`.
+  - videos: `hook` (stops the scroll in the first second: strong motion, a
+    reveal, a striking moment), `a-roll` (carries the story: talking to
+    camera, the key action), `b-roll` (cutaways: details, hands, process,
+    scenery, walking, establishing), `keep`, `reject`.
+  - `reject` for either: blurry, shaky, badly exposed, accidental (pocket,
+    floor, finger over lens), very short by mistake, or clearly a worse take
+    of a nearby file.
 - `quality`: 1-5 as material to put in an edit. 5 = use as is. 3 = usable.
   1 = unusable. Judge focus, exposure, framing, steadiness, subject.
 - `tags`: 3-8 lowercase words someone would search for: subject, setting,
@@ -131,13 +131,14 @@ press **Sort** to watch everything fly into its folder.
 
 Tell the user, briefly:
 
-- how many photos and videos per folder, and how many hooks, A-roll, B-roll
-  and rejects
+- photos per photo folder and videos per video folder, and how many hooks,
+  A-roll, B-roll, heroes, thumbnails and rejects
 - duplicates and the space they would free
-- the 3-5 best hooks (file name + second) and best thumbnails
+- the 3-5 best video hooks (file name + second) and best photo thumbnails
 - how to use the dashboard: Sort to file everything, click a folder to
-  browse it, arrows to move, `1`-`0` to change folder, `h r b t l k x` to
-  change role, `s` to star, Space to preview, "Save to folders" to copy or
-  move files into `<folder>/Culled/`, "Shot list" for a CSV.
+  browse it, the Photos / Videos switch at the top, arrows to move, `1`-`0`
+  to change folder, `h r b t l k x` to change role, `s` to star, Space to preview, "Save to folders" to copy or
+  move files into `<folder>/Culled/Photos/…` and `<folder>/Culled/Videos/…`,
+  "Shot list" for a CSV.
 
 The user can stop the server with Ctrl+C, or ask you to stop it.

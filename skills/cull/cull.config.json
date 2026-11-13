@@ -1,24 +1,41 @@
 {
-  "folders": [
-    "People & Talking",
-    "Travel & Places",
-    "Food & Drink",
+  "photo_folders": [
+    "People",
+    "Places & Travel",
+    "Food",
+    "Events",
+    "Product",
+    "Nature & Pets",
+    "Logos & Brand",
+    "Screenshots",
+    "Documents",
+    "Other"
+  ],
+  "video_folders": [
+    "Talking Head",
+    "Travel",
+    "Food",
     "Lifestyle",
     "Product",
     "Events",
     "Nature & Aerial",
-    "Graphics & Logos",
-    "Screens & Docs",
+    "Motion & Graphics",
+    "Screen Recordings",
     "Other"
   ],
-  "roles": {
-    "hook": "Grabs attention in the first second: strong motion, reveal, face, surprise. Opens a reel.",
-    "a-roll": "Main footage that carries the story: talking to camera, the key action.",
-    "b-roll": "Supporting cutaway: details, scenery, hands, process, establishing shots.",
-    "thumbnail": "Would make a good cover or thumbnail: clear face or bold simple frame.",
+  "photo_roles": {
+    "hero": "A strong main shot: sharp, well lit, clear subject. Could lead a post or carousel.",
+    "thumbnail": "Clear face with emotion or a bold simple frame that reads at small size. Cover or thumbnail.",
     "brand": "Logo, wordmark, product packshot or graphic to overlay.",
+    "keep": "Fine, no clear edit use (most screenshots and documents).",
+    "reject": "Blurry, badly exposed, eyes closed, accidental, or a worse copy of a nearby shot."
+  },
+  "video_roles": {
+    "hook": "Stops the scroll in the first second: strong motion, a reveal, a striking face or moment. Opens a reel.",
+    "a-roll": "Main footage that carries the story: talking to camera, the key action.",
+    "b-roll": "Supporting cutaway: details, hands, process, scenery, walking, establishing shots.",
     "keep": "Fine, no clear edit use.",
-    "reject": "Blurry, shaky, badly exposed, accidental, or a worse take of another clip."
+    "reject": "Blurry, shaky, badly exposed, accidental, very short by mistake, or a worse take of another clip."
   },
   "port": 8787
 }

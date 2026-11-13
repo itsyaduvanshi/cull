@@ -12,8 +12,9 @@ For every file Claude decides:
 
 | | |
 |---|---|
-| **Folder** | People & Talking, Travel & Places, Food & Drink, Lifestyle, Product, Events, Nature & Aerial, Graphics & Logos, Screens & Docs, Other (edit the list in `cull.config.json`) |
-| **Edit role** | Hook, A-roll, B-roll, Thumbnail, Brand, Keep, Reject |
+| **Video folder** | Talking Head, Travel, Food, Lifestyle, Product, Events, Nature & Aerial, Motion & Graphics, Screen Recordings, Other |
+| **Photo folder** | People, Places & Travel, Food, Events, Product, Nature & Pets, Logos & Brand, Screenshots, Documents, Other |
+| **Edit role** | videos: Hook, A-roll, B-roll · photos: Hero, Thumbnail, Brand · both: Keep, Reject |
 | **Quality** | 1–5, as material to put in an edit |
 | **Tags + caption** | searchable words (drone, close-up, slow-mo, talking head…) and one sentence |
 | **Hook moment** | for videos: the second with the strongest moment to open a reel on |
@@ -82,15 +83,17 @@ Then type `/cull ~/Desktop/Shoot`, or just say *"sort the footage in
 
 ## Dashboard
 
-- **Sort** files every clip and photo into its folder card, with sound if
-  you turn it on. Replay it any time.
+- **Videos** and **Photos** are separate tabs, each with its own folders.
+- **Run sort**: every clip or photo flies along a wire into its folder node,
+  the node lights up and counts, and the run ends with a SORTED stamp.
+  Sound is optional. Replay it any time.
 - **Folders**: click one to browse it.
 - **Browse**: filter by role, photos or videos, vertical or horizontal,
   starred, similar takes, duplicates. Hover a video to preview it.
 - **Preview**: videos open at their hook moment. "What Claude saw" shows the
   six frames; click one to jump there.
 - **Save to folders** copies (default) or moves the files into
-  `<your folder>/Culled/<Folder>/`. Duplicates go to `_Duplicates`, so you
+  `<your folder>/Culled/Videos/<Folder>/` and `Culled/Photos/<Folder>/`. Duplicates go to `_Duplicates`, so you
   can check them and delete them yourself. A move can be undone once.
 - **Shot list (CSV)**: file, type, folder, role, quality, tags, caption,
   length, hook second, orientation, audio.
@@ -111,8 +114,10 @@ labels, even after a re-scan.
 
 ## Customise
 
-`skills/cull/cull.config.json` holds the folder list (keep it to 10 so each
-has a number key), the role descriptions Claude follows, and the port.
+`skills/cull/cull.config.json` holds the photo and video folder lists (keep
+each to 10 so every folder has a number key), the role descriptions Claude
+follows, and the port. The dashboard has a forest theme and a paper theme
+(button in the top right).
 
 ## Run the parts yourself
 
