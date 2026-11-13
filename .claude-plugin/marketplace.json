@@ -1,0 +1,11 @@
+{
+  "name": "shoebox",
+  "owner": { "name": "Shoebox contributors" },
+  "plugins": [
+    {
+      "name": "shoebox",
+      "source": "./",
+      "description": "Sort a photo folder for editing with Claude and review it in a local dashboard."
+    }
+  ]
+}

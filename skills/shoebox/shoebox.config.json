@@ -1,0 +1,23 @@
+{
+  "folders": [
+    "People",
+    "Places & Travel",
+    "Food",
+    "Events",
+    "Pets & Animals",
+    "Products",
+    "Logos & Brand",
+    "Screenshots",
+    "Documents",
+    "Other"
+  ],
+  "roles": {
+    "hero": "Strong main shot: lead image, A-roll still, hero frame",
+    "b-roll": "Supporting shot to cut away to",
+    "thumbnail": "Would make a good video thumbnail or cover",
+    "brand": "Logo, brand asset, graphic to overlay",
+    "keep": "Fine to keep, no clear edit use",
+    "reject": "Blurry, dark, accidental, or not usable"
+  },
+  "port": 8787
+}

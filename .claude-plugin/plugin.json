@@ -1,0 +1,6 @@
+{
+  "name": "shoebox",
+  "version": "0.1.0",
+  "description": "Claude looks at every photo in a folder, sorts it for editing (folder, role, quality, tags, duplicates) and opens a local dashboard to review and move the files.",
+  "keywords": ["photos", "sorting", "duplicates", "video editing", "dashboard"]
+}
