@@ -55,7 +55,7 @@ reads iPhone HEIC photos on Windows and Linux.
 In Claude Code:
 
 ```
-/plugin marketplace add YOUR-GITHUB-NAME/cull
+/plugin marketplace add itsyaduvanshi/cull
 /plugin install cull@cull
 ```
 
@@ -64,7 +64,7 @@ Then run `/cull:cull ~/Desktop/Shoot`.
 ### Option B: clone and run
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-NAME/cull.git
+git clone https://github.com/itsyaduvanshi/cull.git
 cd cull
 claude
 ```
